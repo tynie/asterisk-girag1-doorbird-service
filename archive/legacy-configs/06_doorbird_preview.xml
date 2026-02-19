@@ -1,0 +1,114 @@
+<include>
+  <!--
+    DoorBird -> FreeSWITCH (Pi B2BUA) -> 2x Gira G1
+
+    Extension 7001:
+    - rings both G1 in parallel
+    - injects DoorBird RTSP preview on each ringing leg
+    - when one G1 answers, the other is cancelled by bridge semantics
+    - keeps DoorBird and accepted G1 in one bridged call for real audio
+  -->
+  <extension name="doorbird_preview_7001">
+    <condition field="destination_number" expression="^7001$">
+      <action application="set" data="hangup_after_bridge=true"/>
+      <action application="set" data="call_timeout=40"/>
+      <action application="set" data="originate_timeout=40"/>
+      <action application="set" data="ignore_early_media=true"/>
+      <action application="set" data="bridge_early_media=false"/>
+      <action application="set" data="bypass_media=false"/>
+      <action application="set" data="disable-transcoding=true"/>
+      <action application="set" data="inherit_codec=true"/>
+      <action application="set" data="rtp_disable_video=false"/>
+      <action application="set" data="codec_string=PCMU,PCMA,G722,H264"/>
+      <!-- Temporarily disable preview injection to restore native DoorBird video path -->
+      <action application="log" data="INFO DOORBIRD_7001_HIT from=${sip_network_ip} to=${destination_number}"/>
+
+      <action application="ring_ready"/>
+
+      <!-- Stable fanout: comma-separated destinations -->
+      <action application="bridge" data="sofia/internal/7000@192.168.11.23,sofia/internal/7000@192.168.11.53"/>
+    </condition>
+  </extension>
+
+  <!--
+    Experimental B2BUA branch for dual preview:
+    - separate extension to avoid touching the stable path
+    - forces proxy-media style relay to avoid FS video re-encode artifacts
+  -->
+  <extension name="doorbird_preview_7011_proxy_media">
+    <condition field="destination_number" expression="^7011$">
+      <action application="set" data="hangup_after_bridge=true"/>
+      <action application="set" data="call_timeout=45"/>
+      <action application="set" data="originate_timeout=45"/>
+      <action application="set" data="rtp_timeout_sec=120"/>
+      <action application="set" data="rtp_hold_timeout_sec=180"/>
+
+      <!-- Keep one B2BUA call, but relay media in proxy mode. -->
+      <action application="set" data="proxy_media=true"/>
+      <action application="set" data="bypass_media=false"/>
+      <action application="set" data="ignore_early_media=true"/>
+      <action application="set" data="bridge_early_media=false"/>
+      <action application="set" data="disable-transcoding=true"/>
+      <action application="set" data="inherit_codec=true"/>
+      <action application="set" data="rtp_disable_video=false"/>
+      <action application="set" data="codec_string=PCMU,PCMA,G722,H264"/>
+      <action application="set" data="absolute_codec_string=PCMU,PCMA,G722,H264"/>
+      <action application="set" data="sip_ignore_183=false"/>
+
+      <action application="log" data="INFO DOORBIRD_7011_HIT from=${sip_network_ip} to=${destination_number} proxy_media=${proxy_media}"/>
+      <action application="ring_ready"/>
+      <action application="bridge" data="{originate_timeout=45,leg_timeout=45,ignore_early_media=true,rtp_disable_video=false,absolute_codec_string=PCMU,PCMA,G722,H264}sofia/internal/7000@192.168.11.23,sofia/internal/7000@192.168.11.53"/>
+    </condition>
+  </extension>
+
+  <!--
+    Experimental B2BUA branch #2:
+    enforce bypass-media as early as possible to avoid FS video encoding path.
+  -->
+  <extension name="doorbird_preview_7012_bypass_media">
+    <condition field="destination_number" expression="^7012$">
+      <action application="set" data="hangup_after_bridge=true"/>
+      <action application="set" data="call_timeout=45"/>
+      <action application="set" data="originate_timeout=45"/>
+      <action application="set" data="rtp_timeout_sec=120"/>
+      <action application="set" data="rtp_hold_timeout_sec=180"/>
+
+      <action application="set" data="bypass_media=true"/>
+      <action application="set" data="proxy_media=false"/>
+      <action application="set" data="ignore_early_media=false"/>
+      <action application="set" data="bridge_early_media=true"/>
+      <action application="set" data="rtp_disable_video=false"/>
+      <action application="set" data="absolute_codec_string=PCMU,PCMA,G722,H264"/>
+      <action application="set" data="sip_ignore_183=false"/>
+
+      <action application="log" data="INFO DOORBIRD_7012_HIT from=${sip_network_ip} to=${destination_number} bypass_media=${bypass_media}"/>
+      <action application="ring_ready"/>
+      <action application="bridge" data="{originate_timeout=45,leg_timeout=45,bypass_media=true,ignore_early_media=false,bridge_early_media=true,sip_ignore_183=false,rtp_disable_video=false,absolute_codec_string=PCMU,PCMA,G722,H264}sofia/internal/7000@192.168.11.23,sofia/internal/7000@192.168.11.53"/>
+    </condition>
+  </extension>
+
+  <!--
+    Experimental B2BUA branch #3:
+    same as 7012 but WITHOUT initial ring_ready(180), so DoorBird first sees 183+SDP from G1 legs.
+  -->
+  <extension name="doorbird_preview_7013_bypass_no180">
+    <condition field="destination_number" expression="^7013$">
+      <action application="set" data="hangup_after_bridge=true"/>
+      <action application="set" data="call_timeout=45"/>
+      <action application="set" data="originate_timeout=45"/>
+      <action application="set" data="rtp_timeout_sec=120"/>
+      <action application="set" data="rtp_hold_timeout_sec=180"/>
+
+      <action application="set" data="bypass_media=true"/>
+      <action application="set" data="proxy_media=false"/>
+      <action application="set" data="ignore_early_media=false"/>
+      <action application="set" data="bridge_early_media=true"/>
+      <action application="set" data="rtp_disable_video=false"/>
+      <action application="set" data="absolute_codec_string=PCMU,PCMA,G722,H264"/>
+      <action application="set" data="sip_ignore_183=false"/>
+
+      <action application="log" data="INFO DOORBIRD_7013_HIT from=${sip_network_ip} to=${destination_number} bypass_media=${bypass_media}"/>
+      <action application="bridge" data="{originate_timeout=45,leg_timeout=45,bypass_media=true,ignore_early_media=false,bridge_early_media=true,sip_ignore_183=false,rtp_disable_video=false,absolute_codec_string=PCMU,PCMA,G722,H264}sofia/internal/7000@192.168.11.23,sofia/internal/7000@192.168.11.53"/>
+    </condition>
+  </extension>
+</include>

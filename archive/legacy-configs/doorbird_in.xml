@@ -1,0 +1,22 @@
+﻿<extension name="doorbird_in">
+  <condition field="destination_number" expression="^7000$">
+    <!-- DoorBird inbound call -> ring both Gira G1 panels in parallel; cancel the other leg when one answers -->
+
+    <action application="set" data="call_timeout=25"/>
+    <action application="set" data="originate_timeout=25"/>
+    <action application="set" data="hangup_after_bridge=true"/>
+
+    <!-- Try to keep early media if endpoints support it -->
+    <action application="set" data="ignore_early_media=false"/>
+
+    <!-- Anchor media on FS, but avoid transcoding; prefer H264 + G.711/G722 passthrough -->
+    <action application="set" data="bypass_media=false"/>
+    <action application="set" data="disable_transcoding=true"/>
+    <action application="set" data="absolute_codec_string=PCMU,PCMA,G722,H264"/>
+
+    <action application="set" data="sip_invite_domain=${local_ip_v4}"/>
+
+    <!-- Parallel ring: both endpoints; CANCEL is sent to the non-answered leg -->
+    <action application="bridge" data="sofia/internal/sip:7000@192.168.11.56,sofia/internal/sip:7000@192.168.11.53"/>
+  </condition>
+</extension>

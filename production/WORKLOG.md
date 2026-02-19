@@ -720,3 +720,18 @@
 - Push-Blocker 2 (entscheidend):
   - Nicht-interaktive Umgebung kann keine GitHub-Credentials anfordern/speichern (`fatal: could not read Username`).
   - Device-Login via `git credential-manager github login --device --no-ui` schlug mit TLS/SChannel-Fehler fehl.
+### 19:20 - Repo in `production/` und `archive/` getrennt
+- Strukturierung umgesetzt:
+  - `production/`: alle aktiven Asterisk/Preview/Deploy/Doku-Dateien.
+  - `archive/`: historische FreeSWITCH-Varianten, Legacy-Konfigurationen, Referenzdokumente.
+- Konkrete Verschiebungen:
+  - `asterisk18/`, `scripts/`, `deploy/`, `docs/`, `assets/`, Env-Beispiele, `SOLUTION_*`, `WORKLOG.md` -> `production/`.
+  - `freeswitch/` -> `archive/freeswitch-legacy/`.
+  - fruehere XML/Kamailio-Konfigs -> `archive/legacy-configs/`.
+  - Notizen/Referenzdateien -> `archive/references/`.
+- Lokale Artefakte getrennt und ausgeschlossen:
+  - `archive/artifacts/` (pcap/log/G1-Logdumps),
+  - `archive/local-secrets/` (SSH-Key/URLs etc.).
+- Repo-Hygiene:
+  - `.gitignore` erweitert um `archive/artifacts/`, `archive/local-secrets/` und production-env-Dateien.
+  - neuer Root-`README.md` als Einstieg + `archive/README.md` fuer den Legacy-Bereich.

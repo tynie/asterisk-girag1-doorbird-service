@@ -1,0 +1,53 @@
+Du bist mein Senior VoIP/SIP Engineer. Ziel: Early-Media Video Preview bei PARALLEL-FORKING.
+
+Setup:
+- 1x DoorBird Türstation ruft per SIP (Video+Audio, typ. H264) einen Raspberry Pi mit Asterisk an.
+- Asterisk soll den Call parallel an 2x Gira G1 SIP-Wallgeräte forken (beide klingeln).
+Ist-Zustand:
+- Beide G1 klingeln, aber ohne Preview.
+- Sobald ich auf einem G1 abnehme (200 OK), bekomme ich Audio+Video sauber.
+- Der zweite G1-Call wird korrekt abgebrochen (CANCEL), passt.
+Soll-Zustand:
+- BEIDE G1 sollen schon VOR Annahme ein Live-Preview Video (Early Media) sehen, während es klingelt.
+
+Aufgabe:
+1) Analysiere, ob und wie Asterisk (chan_pjsip) Early Media VIDEO von DoorBird zu angerufenen Endgeräten vor Answer weiterleiten kann, insbesondere bei parallel forking (Dial() zu mehreren Zielen).
+2) Prüfe, ob das technisch 1->N Medienfanout erfordert (ein DoorBird-RTP-Stream muss an zwei G1 gleichzeitig) und ob Asterisk das kann (native bridging vs. media duplication).
+3) Prüfe zusätzlich, ob die Gira G1 Early-Video überhaupt anzeigen kann (auch wenn RTP ankommt). Wenn nicht: dokumentiere das als Hard-Limit.
+4) Entwickle konkrete Tests/Experimente und liefere mir:
+   - Asterisk Dialplan-Vorschläge (extensions.conf) inkl. Progress()/Ringing()/183+SDP Verhalten,
+   - relevante pjsip.conf Options / Endpoint-Settings,
+   - Debug-Commands und wie ich Signaling/RTP belege,
+   - und ggf. Alternativ-Architekturen (Proxy vs B2BUA vs RTPengine/Janus/FreeSWITCH) für echtes Preview.
+
+Wichtige Stichworte/Ansätze, die du berücksichtigen sollst:
+- Early Media = 183 Session Progress mit SDP; ggf. 100rel/PRACK; endpoint supports early media?
+- Asterisk Dial() parallel forking: wie verhalten sich provisional responses? Wird Early Media nur von einem Leg akzeptiert?
+- Asterisk ist B2BUA, aber kann es Video “replizieren” (1->2 RTP) vor Answer?
+- Optionen/Flags in PJSIP/Asterisk, die Early Media beeinflussen könnten:
+  - progressinband / inband_progress,
+  - direct_media (ja/nein), direct_media_glare_mitigation,
+  - rtp_symmetric, rewrite_contact, force_rport,
+  - allow / disallow video codecs (H264), dtmf_mode, etc.
+- Asterisk kann Audio konferenzieren (ConfBridge), aber Video? Prüfe realistisch.
+- Wenn Asterisk nicht kann: Alternativen:
+  - (A) SIP Proxy + RTPengine / Media relay, der den Stream duplizieren kann
+  - (B) FreeSWITCH / Janus als Media-Server (fanout)
+  - (C) pragmatisch: Preview NICHT über SIP, sondern über RTSP/HTTP Video Feed der DoorBird parallel in der G1 UI/Preview-Mechanik (falls möglich), während SIP nur für Audio/Call Signaling genutzt wird.
+
+Konkrete Testanleitung, die du liefern sollst:
+- Wie aktiviere ich SIP-Tracing in Asterisk (pjsip set logger on), wie interpretiere ich 183/180/200 und SDP?
+- Wie prüfe ich, ob G1 PRACK sendet / 100rel braucht?
+- sngrep / tcpdump / Wireshark: Welche Filter? Wie sehe ich, ob RTP schon vor Answer fließt?
+- Wie prüfe ich, ob Asterisk überhaupt RTP Richtung G1 sendet vor 200 OK (Ports/IPs in SDP, RTP-Streams)?
+- Welche minimalen Dialplan-Varianten testen:
+  a) Dial(PJSIP/g1a&PJSIP/g1b, ..., Optionen) und gezielt 183 erzwingen,
+  b) Early media “durchreichen” vs “local ringback”,
+  c) direct_media on/off,
+  d) separate early-media test: DoorBird -> Asterisk -> EIN G1 nur Early Media video (ohne Answer) um G1 Capability zu prüfen.
+
+Output-Format:
+- zuerst: klare Aussage “Machbar/Nicht machbar mit Asterisk allein” inkl. Begründung.
+- dann: Schritt-für-Schritt Tests (kommandos + erwartete Beobachtung).
+- dann: konkrete Konfig-Beispiele (pjsip.conf + extensions.conf Snippets).
+- dann: Alternative Architektur-Vorschläge (2–3 Optionen) inkl. pro/contra.

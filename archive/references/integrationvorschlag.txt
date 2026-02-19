@@ -1,0 +1,120 @@
+So würde ich’s aufbauen (und warum): FreeSWITCH nur als SIP-Signalisierung + “SDP passthrough” fürs Media. Der G1 will H.264 (Video) + PCMU (Audio) und kann Early-Media Preview.
+FreeSWITCH ist bei Video am zuverlässigsten, wenn du Bypass/Proxy Media nutzt (also nicht selbst „anfasst“/transcodiert).
+
+Zielbild
+
+DoorBird D2103V → ruft eine Rufnummer/Extension am PBX an
+
+FreeSWITCH macht Fork auf beide G1 (parallel)
+
+Early Media (Preview) wird durchgereicht
+
+sobald einer annimmt: FreeSWITCH bridged Audio+Video zu dem Gerät und cancelt den Ruf am anderen (Standardverhalten bei Fork/Parallel-Bridge)
+
+1) DoorBird Einstellungen (SIP)
+
+DoorBird arbeitet in solchen Setups typischerweise über einen SIP Proxy/Server (Asterisk-Beispiel in deren Doku, aber Prinzip ist gleich).
+
+In der DoorBird App/Web:
+
+SIP active: ON
+
+SIP Proxy = IP deines FreeSWITCH
+
+SIP User / SIP Password = eigener Account (z. B. doorbird_1)
+
+Transport: UDP (wenn möglich zuerst UDP; TCP nur wenn nötig)
+
+SRTP/TLS: aus (G1/Intercom meist RTP plain; wenn du SRTP aktiv hast, kann Video schnell “weg” sein)
+
+Wichtig: Die DoorBird muss beim Anruf auch wirklich m=video (H264) in der SDP anbieten. Das prüfen wir später per SIP-Trace.
+
+2) Gira G1 Einstellungen (Registrar-Modus)
+
+Gira selbst beschreibt: über SIP-Server (Registrar) kannst du beliebig viele SIP-Clients anbinden.
+Am G1:
+
+Call Type: Registrar
+
+Registrar/Proxy: FreeSWITCH IP
+
+User/Pass: je G1 eigener Account (z. B. g1_1, g1_2)
+
+Codecs: sicherstellen, dass PCMU aktiv ist (Audio) und Video H.264 (G1 nennt das explizit).
+
+3) FreeSWITCH: entscheidende Media-Settings
+
+Damit Video nicht “kaputt” geht, machst du SDP passthrough:
+
+Option A (meist am besten im LAN): bypass_media
+
+FreeSWITCH vermittelt nur SIP, die RTP-Ströme laufen direkt Endgerät↔Endgerät (DoorBird↔G1).
+Voraussetzung: Geräte können sich direkt erreichen (keine “funky NAT”).
+
+Im Dialplan pro Call:
+
+bypass_media=true
+
+bridge_early_media=true (damit Preview vor Annahme durchgeht)
+
+ignore_early_media=false
+
+Option B: proxy_media
+
+Wenn du RTP durch FreeSWITCH “durchschieben” willst (aber weiterhin nicht decoden): Proxy-Media.
+Ist manchmal bei NAT/Firewalls einfacher, aber du verlierst Features wie “mal eben Audio abspielen/Record” (geht in Proxy-Media nicht sauber).
+
+4) FreeSWITCH Dialplan-Beispiel (Fork auf beide G1 inkl. Preview)
+
+Beispiel XML (conceptual, aber so mache ich’s):
+
+<extension name="doorbird_to_g1_ring">
+  <condition field="destination_number" expression="^7000$">
+    <!-- Early-Media/Preview erlauben -->
+    <action application="set" data="ignore_early_media=false"/>
+    <action application="set" data="bridge_early_media=true"/>
+
+    <!-- Video nicht anfassen -->
+    <action application="set" data="bypass_media=true"/>
+    <!-- alternativ: proxy_media=true (statt bypass_media) -->
+
+    <!-- Fork: beide G1 parallel -->
+    <action application="set" data="continue_on_fail=true"/>
+    <action application="bridge" data="sofia/internal/g1_1@lan,sofia/internal/g1_2@lan"/>
+  </condition>
+</extension>
+
+
+Wichtig:
+
+Das bridge mit Komma forkt parallel (der, der annimmt, gewinnt; der andere bekommt CANCEL).
+
+Early Media klappt nur, wenn FS das nicht “unterdrückt” und die Endpunkte Video in der SDP aushandeln.
+
+5) Debug-Checkliste (damit du nicht im Nebel stochern musst)
+
+Wenn Video “nicht so recht will”, ist es fast immer SDP/Codec/Media-Handling. Ich würde in der Reihenfolge prüfen:
+
+SIP-Trace: bietet DoorBird Video an?
+In INVITE/183/200 muss in SDP stehen:
+
+m=video ...
+
+a=rtpmap:.. H264/90000
+
+Kommt Video-Angebot am G1 an (nach FreeSWITCH)?
+Wenn DoorBird Video anbietet, aber im INVITE an den G1 kein m=video mehr drin ist → FreeSWITCH „fasst“ SDP an / Profil filtert Video.
+
+Transcoding vermeiden
+Sobald FreeSWITCH versucht, irgendwas zu transcodieren/anchor-media zu machen, ist Video oft tot. Deshalb bypass/proxy.
+
+Early Media Pfad
+Preview brauchst du typischerweise via 183 Session Progress mit SDP. Wenn du erst nach 200 OK Video siehst, fehlt bridge_early_media/Early-Media Durchreichung (oder die DoorBird sendet kein 183).
+
+6) Was ich an deinem Setup ändern würde (wenn du gerade “Service + FreeSWITCH” fährst)
+
+Service raus aus dem Media-Pfad. Der Service sollte höchstens “Business Logic” machen (z. B. welche G1s klingeln), aber nicht selber RTP/Video terminieren.
+
+FreeSWITCH: bypass_media + bridge_early_media als Default für DoorBird-Calls.
+
+Erst wenn das stabil läuft, kannst du Features (DTMF Türöffner, Zeitprofile, weitere Ziele) ergänzen.

@@ -1,0 +1,23 @@
+# DoorBird – SIP Settings
+
+## SIP Settings
+- **SIP activated:** On
+- **SIP Proxy:** `192.168.11.180:5080`
+- **SIP User:** `doorbird`
+- **SIP Password:** (gesetzt, nicht sichtbar)
+
+## Optional Settings
+- **Auth ID:** (leer)
+- **Display name:** (leer)
+- **STUN Server:** (leer)
+
+## Advanced Settings
+- **DTMF:** Off
+- **Allow incoming calls:** Off
+- **Button action during call:** No action
+- **Ring time limit (max. 180s):** 180
+- **Call time limit (max. 300s):** 180
+- **Noise cancellation:** On
+- **Microphone volume:** 33%
+- **Speaker volume:** 70%
+- **Last error code:** 200

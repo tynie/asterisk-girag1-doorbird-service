@@ -1,0 +1,15 @@
+<extension name="doorbird_in">
+  <condition field="destination_number" expression="^7000$">
+    <action application="set" data="call_timeout=25"/>
+    <action application="set" data="originate_timeout=25"/>
+    <action application="set" data="hangup_after_bridge=true"/>
+
+    <action application="ring_ready"/>
+
+    <!-- Anchor media on FreeSWITCH so we can relay RTP (and capture/diagnose if video still fails). -->
+    <action application="set" data="bypass_media=false"/>
+
+    <!-- Try SIP video toward G1 (DoorBird offers H264). Keep ignore_early_media to avoid early-media seizing/cancels. -->
+    <action application="bridge" data="{leg_timeout=25,ignore_early_media=true,sip_ignore_183=true,absolute_codec_string=PCMU,PCMA,G722,video_codec_prefs=H264}sofia/internal/7000@192.168.11.23,sofia/internal/7000@192.168.11.53"/>
+  </condition>
+</extension>

@@ -3,6 +3,8 @@ local.env
 doorbirdstreamurl.txt
 doorbird_rtsp_url.txt
 doorbird.local.env
+production/doorbird.local.env
+production/local.env
 key
 key2
 key.txt
@@ -14,3 +16,7 @@ key.ppk
 *.log
 *.pcap
 /tmp/
+
+# Archived local artifacts and secrets (keep local, do not commit)
+archive/local-secrets/
+archive/artifacts/

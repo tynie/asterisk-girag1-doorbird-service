@@ -1,0 +1,84 @@
+Ich sehe, warum dir das „Answer() auf 7901/7902“ komisch vorkommt – aber es ist nicht automatisch Quatsch. Dein Agent vermischt nur zwei Dinge:
+
+Early Media für die Preview brauchst du auf dem G1-Leg (Asterisk → G1: 180/183 + SDP, Video schon vor 200 OK).
+
+Ob der Service-Leg (Preview-Service → Asterisk: 7901/7902) in 183 bleibt oder schon 200 OK bekommt, ist dafür nicht zwingend entscheidend. Den Service-Leg kannst du durchaus sofort answer’n, und trotzdem dem G1 weiterhin Early-Video liefern – wenn dein Dialplan/Bridge das zulässt.
+
+Dass es genau beim G1-Answer einfriert, ist eher ein Hinweis auf Video-Source-Switching / SDP-Umschaltung beim Join in die ConfBridge, nicht darauf, dass „Early Media falsch“ wäre.
+
+Warum die Agent-Schlussfolgerung wackelig ist
+1) “Early→200 Übergang” ist normal – sollte RTP nicht dauerhaft killen
+
+Ein Wechsel von 183 Session Progress zu 200 OK ist im SIP völlig normal. Wenn dabei Video dauerhaft einfriert, passiert meist zusätzlich eins von beiden:
+
+ConfBridge wählt plötzlich eine andere Videoquelle (z. B. DoorBird statt Service), oder „keine“.
+
+Es passiert ein Re-INVITE/SDP-Update, das Video auf inactive / Port 0 / andere Payloads/Parameter dreht.
+
+Und genau das ist bei ConfBridge auch naheliegend, weil ConfBridge kein MCU ist (kein Transcoding/Scaling/„Mixing“). Sie verteilt Video als Single-Source nach video_mode und erwartet, dass alle Teilnehmer denselben Videocodec sauber sprechen.
+
+2) “Service-Leg bleibt in 183 bis zum Ende” kann schlicht ein Dialplan-Effekt sein
+
+Wenn du auf 7901/7902 nicht Answer() machst und direkt Dial(G1) startest, ist es typisch, dass der eingehende Call (Service) erstmal nur progress bekommt und erst später finalisiert wird. Das ist nicht automatisch die Ursache für Freeze.
+
+Was ich stattdessen als wahrscheinlichste Ursache sehe
+A) ConfBridge schaltet die Videoquelle beim Join um
+
+Wenn DoorBird und Service und G1 in doorbird-main landen, hat ConfBridge mehrere Kandidaten. Je nach video_mode (z. B. follow_talker) kann sie beim Moment “G1 answered + join” auf DoorBird oder den G1 umspringen – und wenn diese Quelle dann kein kompatibles Video liefert (oder gar keins), bleibt das letzte Frame stehen.
+
+Harter Fix (sehr empfehlenswert): Videoquelle explizit pinnen
+Mit AMI gibt’s genau dafür: ConfbridgeSetSingleVideoSrc.
+Das ist “noch stärker” als last_marked, weil es unabhängig von Talker/Marked-Wechseln ist.
+
+Wenn dein Dialplan ohnehin SVC_CHAN kennt:
+→ sobald Winner feststeht (joinconf), rufst du per AMI:
+
+Action: ConfbridgeSetSingleVideoSrc
+Conference: doorbird-main
+Channel: <SVC_CHAN>
+
+
+Damit zwingst du ConfBridge, immer den Service-Channel als Videoquelle an alle Video-fähigen Teilnehmer zu verteilen.
+
+B) Codec/Profile-Mismatch beim Umschalten
+
+Wenn ConfBridge kurzzeitig von Service (H264 baseline) auf DoorBird (evtl. Main/High oder andere fmtp) umspringt, kann der G1 Decoder hängen bleiben. Da ConfBridge nicht transcodiert, wird das nicht „gerettet“.
+=> Das erklärt „Audio bleibt stabil, Video tot“.
+
+Ist “Answer() in 7901/7902” trotzdem einen Test wert?
+
+Ja – aber aus einem anderen Grund:
+
+ConfBridge/Bridge-Operationen sind oft stabiler, wenn Channels answered sind (klarer Zustand, weniger “early-bridge” Sonderfälle).
+
+Wenn der Service-Leg beim Join/Redirect in eine neue Bridge in einem Early-State ist, kann Asterisk dabei eher zu SDP-Renegotiations greifen.
+
+Aber: Wenn du Answer() einbaust und plötzlich keine Preview mehr vor Annahme am G1 kommt, dann weißt du: dein aktuelles Preview-Routing hängt tatsächlich an einer Early-Bridge-Spezialität – dann sofort wieder raus.
+
+3-Minuten Debug, um „Agent vs. ConfBridge“ sauber zu entscheiden
+
+Nach dem Freeze prüfen: sendet Asterisk noch Video-RTP an den G1?
+Wenn RTP weiter läuft, aber G1 zeigt Standbild → sehr wahrscheinlich Source-Switch/Codec-Problem (Keyframe/Profile/SDP).
+
+SIP/SDP um den Join:
+
+pjsip set logger on
+
+Suche beim Moment des Joins nach reINVITE an den G1 und an den Service-Leg:
+
+bleibt m=video da?
+
+bleibt a=sendrecv?
+
+bleiben Payloads/fmtp gleich?
+
+ConfBridge source-control test (ohne Umbau):
+
+Sobald Winner gesetzt ist, einmalig ConfbridgeSetSingleVideoSrc auf den Service-Channel feuern. Wenn Freeze weg ist: Ursache gefunden.
+
+Mein klarer Tipp für euren nächsten Schritt
+
+Mach nicht zuerst Answer() als “Root Cause Fix”.
+Mach zuerst den harten Video-Source-Pin (AMI ConfbridgeSetSingleVideoSrc) – das passt 1:1 zu deinem Flow (“Winner steht, also Service ist die Quelle”).
+
+Wenn du mir sagst, welches video_mode aktuell in eurem doorbird_bridge aktiv ist (oder schickst den confbridge.conf Ausschnitt), kann ich dir auch direkt sagen, ob du gerade faktisch follow_talker fährst (klassischer Freeze-Trigger) oder ob schon last_marked aktiv ist und es eher ein SDP-Thema ist.

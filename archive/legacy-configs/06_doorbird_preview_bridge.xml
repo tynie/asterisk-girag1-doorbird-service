@@ -1,0 +1,34 @@
+<include>
+  <!--
+    BACKUP (bridge-based attempt)
+
+    DoorBird -> FreeSWITCH (Pi) -> 2x Gira G1
+
+    Extension 7001:
+    - rings both G1 in parallel
+    - injects DoorBird RTSP video preview on each G1 leg during early media
+      via execute_on_pre_answer -> lua doorbird_preview.lua
+    - bridges audio between DoorBird and the answering G1 (FreeSWITCH B2BUA)
+
+    This file is NOT intended to be deployed as-is together with 06_doorbird_preview.xml,
+    because it uses the same destination_number (7001).
+  -->
+  <extension name="doorbird_preview_7001">
+    <condition field="destination_number" expression="^7001$">
+      <action application="set" data="hangup_after_bridge=true"/>
+      <action application="set" data="ignore_early_media=false"/>
+      <action application="set" data="bridge_early_media=true"/>
+
+      <!-- Ensure we offer H264 to the G1 -->
+      <action application="set" data="video_codec_prefs=H264"/>
+      <action application="set" data="absolute_codec_string=PCMU,PCMA,G722,H264"/>
+      <action application="set" data="rtp_disable_video=false"/>
+      <action application="set" data="bypass_media=false"/>
+
+      <!-- Per-leg: start RTSP preview on pre-answer -->
+      <!-- Use full path and no extra quoting (script_dir is /usr/share/freeswitch/scripts). -->
+      <action application="bridge" data="{originate_timeout=25,leg_timeout=25,execute_on_pre_answer=lua /usr/share/freeswitch/scripts/doorbird_preview.lua}sofia/internal/sip:7000@192.168.11.23:5060&amp;{originate_timeout=25,leg_timeout=25,execute_on_pre_answer=lua /usr/share/freeswitch/scripts/doorbird_preview.lua}sofia/internal/sip:7000@192.168.11.53:5060"/>
+    </condition>
+  </extension>
+</include>
+
