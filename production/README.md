@@ -53,15 +53,29 @@ Details: `docs/CALLFLOW.md`
 
 ## Schnellstart (bestehender Pi)
 
-1. Lokale Datei `doorbird.local.env.example` anpassen und als `doorbird.local.env` auf den Pi legen.
-2. Deploy von Windows:
+1. Zentrale Geraete-IP-Datei anlegen:
+   - `config/devices.env.example` als `/home/config/doorbird.devices.env` (Pi, DoorBird, beide G1).
+2. Lokale Stream-Datei anlegen:
+   - `doorbird.local.env.example` als `/home/config/doorbird.local.env`.
+3. Deploy von Windows:
    - `powershell -ExecutionPolicy Bypass -File .\deploy\push_to_pi.ps1`
-3. DoorBird SIP-Ziel auf Pi/Asterisk18 setzen:
+4. DoorBird SIP-Ziel auf Pi/Asterisk18 setzen:
    - SIP User: `doorbird`
    - SIP Passwort: `doorbird`
    - Proxy/Server: `192.168.11.180:5090`
    - Zielrufnummer: `7800`
-4. Funktionstest aus `docs/OPERATIONS.md` ausfuehren.
+5. Funktionstest aus `docs/OPERATIONS.md` ausfuehren.
+
+## IP-Aenderungen zentral
+
+Ab jetzt die Geraete-IP nur in einer Datei aendern:
+
+- `/home/config/doorbird.devices.env`
+
+Diese Datei wird verwendet fuer:
+
+- Rendern von `sip_doorbird_test.conf` (Asterisk peers)
+- Runtime in Preview-Skripten (Asterisk-Ziel/Caller-Domain)
 
 ## Vollstaendiger Neuaufbau
 

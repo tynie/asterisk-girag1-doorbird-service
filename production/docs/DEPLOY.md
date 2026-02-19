@@ -6,6 +6,20 @@
 - `sudo -n` fuer relevante Kommandos aktiv
 - Asterisk18 vorhanden unter `/opt/asterisk18-test`
 
+## Zentrale IP-Konfiguration
+
+Lege auf dem Pi an:
+
+- `/home/config/doorbird.devices.env` (aus `config/devices.env.example`)
+
+Beispiel:
+
+```bash
+cp /home/config/doorbird.devices.env.example /home/config/doorbird.devices.env
+```
+
+Dann wird beim Install-Deploy automatisch `sip_doorbird_test.conf` aus Template gerendert.
+
 ## A. Deploy von Windows (empfohlen)
 
 ```powershell
@@ -18,6 +32,7 @@ powershell -ExecutionPolicy Bypass -File .\deploy\push_to_pi.ps1 `
 Das Script:
 
 - kopiert alle relevanten Konfigs/Skripte nach `/home/config`
+- kopiert `devices.env.example` und `sip_doorbird_test.conf.tpl`
 - installiert `doorbird-preview-live.service`
 - deployed Asterisk-Dateien
 - fuehrt `apply18.sh` und Reloads aus

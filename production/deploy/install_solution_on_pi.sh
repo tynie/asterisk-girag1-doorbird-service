@@ -8,7 +8,13 @@ AST_CON="${AST_CON:-/opt/asterisk18-test/etc/asterisk/asterisk.conf}"
 
 echo "[1/5] install scripts and templates"
 install -d -m 755 "${CONF_HOME}/baresip-doorbirdtest"
-chmod 755 "${CONF_HOME}/pi_baresip_preview_call.sh" "${CONF_HOME}/pi_baresip_preview_dual_live.sh" "${CONF_HOME}/doorbird_conf_guard.sh"
+for f in \
+  "${CONF_HOME}/pi_baresip_preview_call.sh" \
+  "${CONF_HOME}/pi_baresip_preview_dual_live.sh" \
+  "${CONF_HOME}/doorbird_conf_guard.sh" \
+  "${CONF_HOME}/apply_devices_env.sh"; do
+  [[ -f "${f}" ]] && chmod 755 "${f}"
+done
 install -m 644 "${CONF_HOME}/baresip-doorbirdtest.config" "${CONF_HOME}/baresip-doorbirdtest/config"
 install -m 644 "${CONF_HOME}/baresip-doorbirdtest.accounts" "${CONF_HOME}/baresip-doorbirdtest/accounts"
 install -m 644 "${CONF_HOME}/baresip-doorbirdtest.contacts" "${CONF_HOME}/baresip-doorbirdtest/contacts"
@@ -24,6 +30,13 @@ install -m 644 "${CONF_HOME}/doorbird-preview-live.service" /etc/systemd/system/
 systemctl daemon-reload
 
 echo "[3/5] install asterisk configs"
+if [[ -f "${CONF_HOME}/doorbird.devices.env" && -f "${CONF_HOME}/sip_doorbird_test.conf.tpl" ]]; then
+  echo "render sip config from doorbird.devices.env"
+  bash "${CONF_HOME}/apply_devices_env.sh" \
+    "${CONF_HOME}/doorbird.devices.env" \
+    "${CONF_HOME}/sip_doorbird_test.conf.tpl" \
+    "${CONF_HOME}/sip_doorbird_test.conf"
+fi
 install -m 644 "${CONF_HOME}/sip_doorbird_test.conf" "${AST_CFG}/sip_doorbird_test.conf"
 install -m 644 "${CONF_HOME}/extensions_doorbird_test.conf" "${AST_CFG}/extensions_doorbird_test.conf"
 install -m 644 "${CONF_HOME}/confbridge_doorbird_test.conf" "${AST_CFG}/confbridge_doorbird_test.conf"

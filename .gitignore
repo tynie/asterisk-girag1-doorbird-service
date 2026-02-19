@@ -3,7 +3,9 @@ local.env
 doorbirdstreamurl.txt
 doorbird_rtsp_url.txt
 doorbird.local.env
+doorbird.devices.env
 production/doorbird.local.env
+production/doorbird.devices.env
 production/local.env
 key
 key2

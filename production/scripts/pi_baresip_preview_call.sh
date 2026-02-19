@@ -21,6 +21,7 @@ DUR="${3:-25}"
 SOURCE_URL_OVERRIDE="${4:-}"
 DEST_USER="${5:-7000}"
 DEST_PORT="${6:-5060}"
+DEVICES_ENV="/home/config/doorbird.devices.env"
 
 if [[ -z "${ENV_FILE}" || -z "${G1_IP}" ]]; then
   echo "usage: $0 /path/to/doorbird.local.env <g1_ip> [duration_seconds]" >&2
@@ -35,6 +36,11 @@ set -a
 # shellcheck disable=SC1090
 source "${ENV_FILE}"
 set +a
+
+if [[ -f "${DEVICES_ENV}" ]]; then
+  # shellcheck disable=SC1090
+  source "${DEVICES_ENV}"
+fi
 
 SOURCE_URL="${SOURCE_URL_OVERRIDE:-${DOORBIRD_VIDEO_URL:-${DOORBIRD_RTSP_URL:-}}}"
 if [[ -z "${SOURCE_URL}" ]]; then
@@ -81,8 +87,9 @@ sed -i -E "s|^[[:space:]]*video_bitrate[[:space:]].*$|video_bitrate\t\t180000|g"
 
 # Minimal local identity. No registration.
 # Keep From user as "doorbird" so the G1 "participant has camera" mapping matches.
+CALLER_DOMAIN="${PI_IP:-${AST_IP:-192.168.11.180}}"
 cat >"${WORKDIR}/accounts" <<EOF
-<sip:doorbird@192.168.11.180>;regint=0
+<sip:doorbird@${CALLER_DOMAIN}>;regint=0
 EOF
 
 DEST="sip:${DEST_USER}@${G1_IP}:${DEST_PORT}"

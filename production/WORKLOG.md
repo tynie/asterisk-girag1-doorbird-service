@@ -735,3 +735,51 @@
 - Repo-Hygiene:
   - `.gitignore` erweitert um `archive/artifacts/`, `archive/local-secrets/` und production-env-Dateien.
   - neuer Root-`README.md` als Einstieg + `archive/README.md` fuer den Legacy-Bereich.
+### 19:35 - Pi `/home/config` bereinigt (nur produktiver Satz + Backup)
+- Ziel: nur noch fuer den aktuellen Betrieb relevante Dateien direkt unter `/home/config`.
+- Vorgehen:
+  - Keep-Liste erstellt (Asterisk18-Konfig, aktive Preview-Skripte, `.env`, Baresip-Template, Doku, Installer).
+  - Restdateien vor dem Loeschen in ein Archiv gesichert:
+    - `/home/config/cleanup-backup-20260219-091455.tar.gz`
+  - Danach 53 alte/temporäre Dateien/Ordner entfernt (`*.new`, alte FreeSWITCH-/Lua-Reste, alte pcaps/logs, temp dumps, etc.).
+- Ergebnis in `/home/config`:
+  - behalten: `apply18.sh`, `sip_doorbird_test.conf`, `extensions_doorbird_test.conf`, `confbridge_doorbird_test.conf`
+  - behalten: `pi_baresip_preview_call.sh`, `pi_baresip_preview_dual_live.sh`, `doorbird_conf_guard.sh`, `doorbird-preview-live.service`
+  - behalten: `doorbird.local.env`, `baresip-doorbirdtest/`, `silence.wav`
+  - behalten: Doku-Dateien (`README-doorbird-g1.md`, `CALLFLOW-doorbird-g1.md`, `SOLUTION_*`, `WORKLOG.md`, `docs-doorbird-g1/`)
+  - behalten: Repo-Klon `asterisk-girag1-doorbird-service/`
+- Post-Check:
+  - `sip show peers`: `g1_23` und `g1_53` weiterhin `OK`.
+  - `dialplan show s@doorbird-cleanup`: aktiver Timeout-/Cleanup-Flow vorhanden.
+  - `doorbird-preview-live.service`: geladen und betriebsbereit (inactive/dead im Idle, letzter Lauf erfolgreich).
+### 19:48 - Zentrale Geraete-IP-Konfiguration eingefuehrt
+- Ausgangslage:
+  - DoorBird/G1/Pi IPs waren bisher auf mehrere Dateien verteilt (SIP-Config + Skripte).
+- Neu:
+  - `config/devices.env.example` als zentrale Vorlage.
+  - `deploy/apply_devices_env.sh` rendert `sip_doorbird_test.conf` aus Template.
+  - neues Template: `asterisk18/sip_doorbird_test.conf.tpl` mit Platzhaltern.
+- Deploy-Integration:
+  - `deploy/install_solution_on_pi.sh` rendert bei vorhandenem `/home/config/doorbird.devices.env` automatisch die SIP-Konfig.
+  - `deploy/push_to_pi.ps1` kopiert jetzt auch:
+    - `sip_doorbird_test.conf.tpl`
+    - `apply_devices_env.sh`
+    - `config/devices.env.example` -> `/home/config/doorbird.devices.env.example`
+- Runtime-Integration:
+  - `scripts/pi_baresip_preview_dual_live.sh` liest optional `/home/config/doorbird.devices.env` fuer `PI_IP`/`AST_SIP_PORT`.
+  - `scripts/pi_baresip_preview_call.sh` setzt Caller-Domain nun aus zentraler Datei (`PI_IP`) statt hartem Wert.
+### 14:20 - Reboot-Fix: Asterisk18 dauerhaft per systemd gestartet
+- Problem nach Pi-Neustart:
+  - `Unable to connect to remote asterisk (does .../asterisk.ctl exist?)`
+  - Ursache: Asterisk18-Testinstanz war nicht als Boot-Service registriert.
+- Sofortmassnahme:
+  - Asterisk manuell gestartet, `asterisk.ctl` wieder vorhanden.
+- Dauerhafte Loesung:
+  - neue Unit-Datei erstellt: `deploy/asterisk18-test.service`
+  - auf Pi installiert nach `/etc/systemd/system/asterisk18-test.service`
+  - `systemctl daemon-reload`
+  - `systemctl enable --now asterisk18-test.service`
+- Verifikation:
+  - Service ist `active (running)` und `enabled`.
+  - `module show like chan_sip` -> `chan_sip.so Running`
+  - `sip show peers` funktioniert, G1_23/G1_53 wieder `OK`.

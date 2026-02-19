@@ -65,7 +65,10 @@ sudo chown config:config /home/config/silence.wav
 
 ## 4. DoorBird und G1 Basiswerte
 
-Siehe `docs/DEPLOY.md`, Abschnitt "DoorBird/G1 Konfiguration".
+Siehe `docs/DEPLOY.md`:
+
+- `doorbird.devices.env` (zentrale IP-Werte)
+- DoorBird/G1 SIP Konfiguration
 
 ## 5. Verifikation
 

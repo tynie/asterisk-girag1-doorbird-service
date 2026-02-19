@@ -13,6 +13,7 @@ set -euo pipefail
 
 DUR="${1:-30}"
 ENV_FILE="/home/config/doorbird.local.env"
+DEVICES_ENV="/home/config/doorbird.devices.env"
 CALLER="/home/config/pi_baresip_preview_call.sh"
 OUT_23_PORT=23023
 OUT_53_PORT=23053
@@ -46,6 +47,14 @@ SOURCE_URL="${DOORBIRD_RTSP_URL:-${DOORBIRD_VIDEO_URL:-}}"
 if [[ -z "${SOURCE_URL}" ]]; then
   echo "Neither DOORBIRD_RTSP_URL nor DOORBIRD_VIDEO_URL set in ${ENV_FILE}" >&2
   exit 2
+fi
+
+# Optional central network/device config.
+if [[ -f "${DEVICES_ENV}" ]]; then
+  # shellcheck disable=SC1090
+  source "${DEVICES_ENV}"
+  AST_IP="${PI_IP:-${AST_IP}}"
+  AST_PORT="${AST_SIP_PORT:-${AST_PORT}}"
 fi
 
 cleanup() {

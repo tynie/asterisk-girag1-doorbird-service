@@ -1,0 +1,18 @@
+[Unit]
+Description=Asterisk18 Test Instance
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=root
+Group=root
+ExecStartPre=/bin/mkdir -p /opt/asterisk18-test/var/run/asterisk
+ExecStart=/opt/asterisk18-test/sbin/asterisk -C /opt/asterisk18-test/etc/asterisk/asterisk.conf -f -g -U root -G root
+ExecReload=/opt/asterisk18-test/sbin/asterisk -C /opt/asterisk18-test/etc/asterisk/asterisk.conf -rx core\ reload
+ExecStop=/opt/asterisk18-test/sbin/asterisk -C /opt/asterisk18-test/etc/asterisk/asterisk.conf -rx core\ stop\ now
+Restart=on-failure
+RestartSec=2
+
+[Install]
+WantedBy=multi-user.target
