@@ -1,0 +1,16 @@
+[Unit]
+Description=DoorBird Preview Multicast Relay
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=config
+Group=config
+Environment=PREVIEW_OUT_URL=udp://239.255.42.42:5004?pkt_size=1316&ttl=1
+ExecStart=/usr/local/bin/pi_preview_multicast_relay.sh /home/config/doorbird.local.env
+Restart=always
+RestartSec=2
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,26 @@
+<include>
+  <!--
+    V3 orchestrator route.
+    DoorBird calls one extension, Pi orchestrates both G1 legs itself:
+    - create both outbound G1 calls
+    - inject preview on pre-answer per leg
+    - first answered leg wins, loser is cancelled
+    - bridge DoorBird A-leg to winner
+
+    DoorBird target for this test:
+      7500@192.168.11.180:5081
+  -->
+  <extension name="doorbird_v3_7500_orchestrator">
+    <condition field="destination_number" expression="^7500$">
+      <action application="log" data="INFO DOORBIRD_V3_7500_HIT from=${sip_network_ip} callid=${sip_call_id}"/>
+      <action application="set" data="hangup_after_bridge=true"/>
+      <action application="set" data="call_timeout=55"/>
+      <action application="set" data="originate_timeout=55"/>
+      <action application="set" data="rtp_disable_video=false"/>
+      <action application="set" data="codec_string=PCMU,H264"/>
+      <action application="set" data="absolute_codec_string=PCMU,H264"/>
+      <action application="set" data="inherit_codec=true"/>
+      <action application="lua" data="doorbird_dual_call_orchestrator.lua"/>
+    </condition>
+  </extension>
+</include>

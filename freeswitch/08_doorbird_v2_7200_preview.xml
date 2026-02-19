@@ -1,0 +1,35 @@
+<include>
+  <!--
+    Isolated preview test path.
+
+    DoorBird -> FreeSWITCH:5081 ext 7200 -> 2x G1
+    - keeps stable 7100 path untouched
+    - enables early media forwarding to test preview behavior
+  -->
+  <extension name="doorbird_v2_7200_preview">
+    <condition field="destination_number" expression="^7200$">
+      <action application="log" data="INFO DOORBIRD_V2_7200_PREVIEW_HIT from=${sip_network_ip} callid=${sip_call_id}"/>
+
+      <action application="set" data="hangup_after_bridge=true"/>
+      <action application="set" data="call_timeout=45"/>
+      <action application="set" data="originate_timeout=45"/>
+
+      <action application="set" data="bypass_media=false"/>
+      <action application="set" data="proxy_media=true"/>
+      <action application="set" data="bypass_after_bridge=false"/>
+      <action application="set" data="bypass_media_after_bridge=false"/>
+      <action application="set" data="ignore_early_media=false"/>
+      <action application="set" data="bridge_early_media=true"/>
+      <action application="set" data="sip_ignore_183=false"/>
+
+      <action application="set" data="rtp_disable_video=false"/>
+      <action application="set" data="video_codec_prefs=H264"/>
+      <action application="set" data="codec_string=PCMU,H264"/>
+      <action application="set" data="absolute_codec_string=PCMU,H264"/>
+      <action application="set" data="inherit_codec=true"/>
+
+      <action application="bridge"
+              data="{originate_timeout=45,leg_timeout=45,ignore_early_media=false,bridge_early_media=true,hangup_after_bridge=true,continue_on_fail=true,origination_caller_id_name=doorbird,origination_caller_id_number=doorbird,bypass_media=false,proxy_media=true,codec_string=PCMU,H264,absolute_codec_string=PCMU,H264}sofia/internal/7000@192.168.11.23:5060,sofia/internal/7000@192.168.11.53:5060"/>
+    </condition>
+  </extension>
+</include>

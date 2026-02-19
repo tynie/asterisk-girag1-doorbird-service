@@ -1,0 +1,19 @@
+[Unit]
+Description=DoorBird SIP Invite Watcher for Dual Preview Trigger
+After=network-online.target kamailio.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/doorbird_preview_watch.sh
+Restart=always
+RestartSec=1
+Environment=DOORBIRD_IP=192.168.11.122
+Environment=SIP_PORT=5080
+Environment=COOLDOWN_SEC=20
+Environment=TRIGGER_CMD=/usr/local/bin/doorbird_preview_dual.sh
+Environment=LOG_FILE=/var/log/doorbird-preview-watch.log
+Environment=LOCK_FILE=/tmp/doorbird-preview-watch-trigger.lock
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,16 @@
+# Local secrets (do not commit)
+local.env
+doorbirdstreamurl.txt
+doorbird_rtsp_url.txt
+doorbird.local.env
+key
+key2
+key.txt
+key.ppk
+*.pem
+*.ppk
+
+# Runtime/log artifacts
+*.log
+*.pcap
+/tmp/

@@ -1,0 +1,44 @@
+﻿<include>
+  <!--
+    V2 isolated test path (does not affect stable Kamailio 5080 flow).
+
+    DoorBird -> FreeSWITCH:5081 ext 7100 -> 2x G1
+    - both G1 are rung in parallel
+    - each ringing leg gets preview from local Pi multicast relay
+    - when one answers, the other branch is cancelled by bridge semantics
+    - call remains a single SIP session from DoorBird perspective
+
+    Important:
+    - Use this only for v2 tests by setting DoorBird SIP target to:
+      7100@192.168.11.180:5081
+  -->
+  <extension name="doorbird_v2_7100">
+    <condition field="destination_number" expression="^7100$">
+      <action application="log" data="INFO DOORBIRD_V2_7100_HIT from=${sip_network_ip} callid=${sip_call_id}"/>
+
+      <action application="set" data="hangup_after_bridge=true"/>
+      <action application="set" data="call_timeout=45"/>
+      <action application="set" data="originate_timeout=45"/>
+
+      <action application="set" data="bypass_media=false"/>
+      <action application="set" data="proxy_media=true"/>
+      <action application="set" data="bypass_after_bridge=false"/>
+      <action application="set" data="bypass_media_after_bridge=false"/>
+      <action application="set" data="ignore_early_media=true"/>
+      <action application="set" data="bridge_early_media=false"/>
+      <action application="set" data="sip_ignore_183=false"/>
+
+      <action application="set" data="rtp_disable_video=false"/>
+      <action application="set" data="video_codec_prefs=H264"/>
+      <action application="set" data="codec_string=PCMU,H264"/>
+      <action application="set" data="absolute_codec_string=PCMU,H264"/>
+      <action application="set" data="inherit_codec=true"/>
+
+      <action application="bridge"
+              data="{originate_timeout=45,leg_timeout=45,ignore_early_media=true,bridge_early_media=false,hangup_after_bridge=true,continue_on_fail=true,origination_caller_id_name=doorbird,origination_caller_id_number=doorbird,bypass_media=false,proxy_media=true,codec_string=PCMU,H264,absolute_codec_string=PCMU,H264}sofia/internal/7000@192.168.11.23:5060,sofia/internal/7000@192.168.11.53:5060"/>
+    </condition>
+  </extension>
+</include>
+
+
+

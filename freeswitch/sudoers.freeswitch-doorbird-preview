@@ -1,0 +1,4 @@
+# Allow FreeSWITCH to trigger DoorBird preview calls via a fixed wrapper only.
+# The wrapper drops to user 'config' before running anything.
+freeswitch ALL=(root) NOPASSWD: /usr/local/bin/doorbird_preview_dual.sh
+

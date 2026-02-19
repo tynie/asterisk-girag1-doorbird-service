@@ -1,0 +1,37 @@
+<include>
+  <!--
+    Single-call preview injection test:
+    - one SIP call from DoorBird (no dual-call behavior)
+    - per-G1 leg inject local preview stream while ringing
+    - on answer, preview playback is stopped on answered leg
+
+    DoorBird target for this test:
+      7400@192.168.11.180:5081
+  -->
+  <extension name="doorbird_v2_7400_singlecall_inject_preview">
+    <condition field="destination_number" expression="^7400$">
+      <action application="log" data="INFO DOORBIRD_V2_7400_SINGLECALL_PREVIEW_HIT from=${sip_network_ip} callid=${sip_call_id}"/>
+
+      <action application="set" data="hangup_after_bridge=true"/>
+      <action application="set" data="call_timeout=45"/>
+      <action application="set" data="originate_timeout=45"/>
+
+      <action application="set" data="bypass_media=false"/>
+      <action application="set" data="proxy_media=true"/>
+      <action application="set" data="bypass_after_bridge=false"/>
+      <action application="set" data="bypass_media_after_bridge=false"/>
+      <action application="set" data="ignore_early_media=true"/>
+      <action application="set" data="bridge_early_media=false"/>
+      <action application="set" data="sip_ignore_183=false"/>
+
+      <action application="set" data="rtp_disable_video=false"/>
+      <action application="set" data="video_codec_prefs=H264"/>
+      <action application="set" data="codec_string=PCMU,H264"/>
+      <action application="set" data="absolute_codec_string=PCMU,H264"/>
+      <action application="set" data="inherit_codec=true"/>
+
+      <action application="bridge"
+              data="{originate_timeout=45,leg_timeout=45,ignore_early_media=true,bridge_early_media=false,hangup_after_bridge=true,continue_on_fail=true,origination_caller_id_name=doorbird,origination_caller_id_number=doorbird,bypass_media=false,proxy_media=true}[execute_on_pre_answer=lua doorbird_preview_multicast.lua 23,execute_on_answer=lua doorbird_stop_preview.lua]sofia/internal/7000@192.168.11.23:5060,[execute_on_pre_answer=lua doorbird_preview_multicast.lua 53,execute_on_answer=lua doorbird_stop_preview.lua]sofia/internal/7000@192.168.11.53:5060"/>
+    </condition>
+  </extension>
+</include>

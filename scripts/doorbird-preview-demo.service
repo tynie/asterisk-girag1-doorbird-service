@@ -1,0 +1,15 @@
+[Unit]
+Description=DoorBird G1 dual demo preview call
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=config
+Group=config
+ExecStart=/home/config/pi_baresip_preview_dual_demo.sh 30 /home/config/preview_testsrc.mp4
+TimeoutStartSec=60
+RemainAfterExit=no
+
+[Install]
+WantedBy=multi-user.target

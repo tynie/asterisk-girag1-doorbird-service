@@ -1,0 +1,41 @@
+<include>
+  <!--
+    Hybrid preview route:
+    - triggers separate dual preview calls via baresip helper
+    - keeps stable main call path for audio/live video
+
+    DoorBird target for this test:
+      7300@192.168.11.180:5081
+  -->
+  <extension name="doorbird_v2_7300_hybrid_preview">
+    <condition field="destination_number" expression="^7300$">
+      <action application="log" data="INFO DOORBIRD_V2_7300_HYBRID_HIT from=${sip_network_ip} callid=${sip_call_id}"/>
+
+      <!-- Fire background preview helper (separate calls to both G1 panels). -->
+      <action application="lua" data="doorbird_trigger_preview.lua"/>
+      <!-- Small head-start for preview legs before the stable main call starts. -->
+      <action application="sleep" data="700"/>
+
+      <action application="set" data="hangup_after_bridge=true"/>
+      <action application="set" data="call_timeout=45"/>
+      <action application="set" data="originate_timeout=45"/>
+
+      <action application="set" data="bypass_media=false"/>
+      <action application="set" data="proxy_media=true"/>
+      <action application="set" data="bypass_after_bridge=false"/>
+      <action application="set" data="bypass_media_after_bridge=false"/>
+      <action application="set" data="ignore_early_media=true"/>
+      <action application="set" data="bridge_early_media=false"/>
+      <action application="set" data="sip_ignore_183=false"/>
+
+      <action application="set" data="rtp_disable_video=false"/>
+      <action application="set" data="video_codec_prefs=H264"/>
+      <action application="set" data="codec_string=PCMU,H264"/>
+      <action application="set" data="absolute_codec_string=PCMU,H264"/>
+      <action application="set" data="inherit_codec=true"/>
+
+      <action application="bridge"
+              data="{originate_timeout=45,leg_timeout=45,ignore_early_media=true,bridge_early_media=false,hangup_after_bridge=true,continue_on_fail=true,origination_caller_id_name=doorbird,origination_caller_id_number=doorbird,bypass_media=false,proxy_media=true,codec_string=PCMU,H264,absolute_codec_string=PCMU,H264}sofia/internal/7000@192.168.11.23:5060,sofia/internal/7000@192.168.11.53:5060"/>
+    </condition>
+  </extension>
+</include>
