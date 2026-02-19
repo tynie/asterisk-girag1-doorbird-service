@@ -705,3 +705,18 @@
   - `git push origin HEAD:main` fehlgeschlagen mit
     - `fatal: could not read Username for 'https://github.com': No such device or address`
   - Ursache: fehlende GitHub-Authentifizierung (PAT/SSH-Key) auf dem Pi.
+### 19:06 - Push-Versuch direkt vom Windows-PC
+- Git auf PC wurde erkannt unter:
+  - `C:\Program Files\Git\cmd\git.exe` (nicht im PATH des Sandbox-Terminals)
+- Lokales Repo in `doorbird-g1-bridge` initialisiert:
+  - Branch `main`
+  - Remote `origin` -> `https://github.com/tynie/asterisk-girag1-doorbird-service.git`
+- Commit erfolgreich erstellt:
+  - Commit-ID: `4b5c312`
+  - Message: `Add reproducible DoorBird-G1 bridge setup, docs, and deploy scripts`
+- Push-Blocker 1:
+  - Umgebung hatte Proxy-Variablen auf `127.0.0.1:9` (`HTTP_PROXY`, `HTTPS_PROXY`, `ALL_PROXY`, `GIT_HTTP_PROXY`, `GIT_HTTPS_PROXY`).
+  - Nach Proxy-Bypass war `ls-remote` erreichbar.
+- Push-Blocker 2 (entscheidend):
+  - Nicht-interaktive Umgebung kann keine GitHub-Credentials anfordern/speichern (`fatal: could not read Username`).
+  - Device-Login via `git credential-manager github login --device --no-ui` schlug mit TLS/SChannel-Fehler fehl.
